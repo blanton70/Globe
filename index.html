@@ -184,6 +184,37 @@ const points = data.results
       alert('Failed to load species data');
     }
   });
+    const tooltip = document.getElementById('tooltip');
+const raycaster = new THREE.Raycaster();
+const mouse = new THREE.Vector2();
+let hoveredObject = null;
+
+document.addEventListener('mousemove', event => {
+  const { clientX, clientY } = event;
+  const { left, top, width, height } = globe.renderer().domElement.getBoundingClientRect();
+
+  // Normalize mouse position
+  mouse.x = ((clientX - left) / width) * 2 - 1;
+  mouse.y = -((clientY - top) / height) * 2 + 1;
+
+  raycaster.setFromCamera(mouse, globe.camera());
+
+  const intersects = raycaster.intersectObjects(globe.scene().children, true);
+  const pointObj = intersects.find(i => i.object && i.object.__globeObjType === 'point');
+
+  if (pointObj && pointObj.object.__data) {
+    const data = pointObj.object.__data;
+    tooltip.innerHTML = data.label;
+    tooltip.style.left = `${clientX + 10}px`;
+    tooltip.style.top = `${clientY + 10}px`;
+    tooltip.style.display = 'block';
+    hoveredObject = pointObj;
+  } else {
+    tooltip.style.display = 'none';
+    hoveredObject = null;
+  }
+});
+
 </script>
 </body>
 </html>
