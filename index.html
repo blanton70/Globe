@@ -65,7 +65,14 @@
     .pointColor('color')
     .pointRadius('size')
     .globeImageUrl(textureURLs.satellite)
-    .backgroundImageUrl('https://unpkg.com/three-globe/example/img/night-sky.png');
+    .backgroundImageUrl('https://unpkg.com/three-globe/example/img/night-sky.png')
+      .labelLat('lat')
+  .labelLng('lng')
+  .labelText('label')  // Use the `label` field as hover content
+  .labelSize(1.8)
+  .labelDotRadius(0.4)
+  .labelColor(() => 'rgba(255, 255, 255, 0.8)')
+  .labelResolution(3);
 
   globe.controls().autoRotate = true;
   globe.controls().autoRotateSpeed = 0.3;
@@ -119,15 +126,37 @@
       const res = await fetch(url);
       const data = await res.json();
 
-      const points = data.results
-        .filter(obs => obs.decimalLatitude && obs.decimalLongitude)
-        .map(obs => ({
-          lat: obs.decimalLatitude,
-          lng: obs.decimalLongitude,
-          year: obs.year,
-          color: 'orange',
-          size: 0.4
-        }));
+const points = data.results
+  .filter(obs => obs.decimalLatitude && obs.decimalLongitude)
+  .map(obs => {
+    const lat = obs.decimalLatitude;
+    const lng = obs.decimalLongitude;
+    const year = obs.year || "Unknown year";
+    const country = obs.country || "Unknown country";
+    const species = obs.species || species;
+
+    const imageUrl = (obs.media && obs.media.length && obs.media[0].identifier) || null;
+
+    const labelHTML = `
+      <div style="text-align:left; max-width: 200px;">
+        <strong>${species}</strong><br/>
+        <em>${country}</em><br/>
+        Year: ${year}<br/>
+        Lat: ${lat.toFixed(2)}, Lng: ${lng.toFixed(2)}<br/>
+        ${imageUrl ? `<img src="${imageUrl}" width="100" style="margin-top:5px;border-radius:4px;" />` : ""}
+      </div>
+    `;
+
+    return {
+      lat,
+      lng,
+      year,
+      color: 'orange',
+      size: 0.4,
+      label: labelHTML
+    };
+  });
+
 
       globe.pointsData(points);
       observationCount.textContent = `Observations: ${points.length}`;
