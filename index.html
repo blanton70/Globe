@@ -131,6 +131,23 @@
       }
     });
 
+    const tooltipDiv = document.getElementById('tooltip');
+
+    // 🧠 Moved outside search handler — this runs ONCE
+    globe.onPointHover(point => {
+      if (point) {
+        tooltipDiv.innerHTML = point.tooltip;
+        tooltipDiv.style.display = 'block';
+      } else {
+        tooltipDiv.style.display = 'none';
+      }
+    });
+
+    document.addEventListener('mousemove', e => {
+      tooltipDiv.style.left = `${e.clientX + 10}px`;
+      tooltipDiv.style.top = `${e.clientY + 10}px`;
+    });
+
     document.getElementById('searchBtn').addEventListener('click', async () => {
       const species = document.getElementById('speciesInput').value.trim();
       const startYear = parseInt(startYearSlider.value);
@@ -154,11 +171,7 @@
             const speciesName = obs.species || species;
             const imageUrl = (obs.media && obs.media.length && obs.media[0].identifier) || null;
 
-            const label = `
-              ${speciesName}
-              ${country}, ${year}
-            `;
-
+            const label = `${speciesName}\n${country}, ${year}`;
             const tooltip = `
               <div style="text-align:left;">
                 <strong>${speciesName}</strong><br/>
@@ -180,24 +193,8 @@
             };
           });
 
-        globe.pointsData(points);
-
-        // Hover tooltip
-        const tooltipDiv = document.getElementById('tooltip');
-        globe.onPointHover(point => {
-          if (point) {
-            tooltipDiv.innerHTML = point.tooltip;
-            tooltipDiv.style.display = 'block';
-          } else {
-            tooltipDiv.style.display = 'none';
-          }
-        });
-
-        document.addEventListener('mousemove', e => {
-          tooltipDiv.style.left = `${e.clientX + 10}px`;
-          tooltipDiv.style.top = `${e.clientY + 10}px`;
-        });
-
+        globe.pointsData([]);           // Clear previous points
+        globe.pointsData(points);       // Set new points
         observationCount.textContent = `Observations: ${points.length}`;
       } catch (err) {
         console.error(err);
