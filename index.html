@@ -23,6 +23,9 @@
       background: rgba(255,255,255,0.9);
       padding: 10px;
       border-radius: 6px;
+      <hr />
+<button id="zoomInBtn">Zoom In</button>
+<button id="zoomOutBtn">Zoom Out</button>
     }
   </style>
 </head>
@@ -96,6 +99,20 @@ controls.maxDistance = 500;           // how far you can zoom out
       globe.globeImageUrl(textureURLs[selected]);
     });
   });
+    document.getElementById('zoomInBtn').addEventListener('click', () => {
+  const cam = globe.camera();
+  const controls = globe.controls();
+  cam.position.z -= 20;
+  controls.update();
+});
+
+document.getElementById('zoomOutBtn').addEventListener('click', () => {
+  const cam = globe.camera();
+  const controls = globe.controls();
+  cam.position.z += 20;
+  controls.update();
+});
+
 
   const startYearSlider = document.getElementById('startYearSlider');
   const endYearSlider = document.getElementById('endYearSlider');
