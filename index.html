@@ -36,6 +36,10 @@
     <hr/>
 <input type="text" id="speciesInput" placeholder="Enter species name (e.g. Panthera leo)">
 <button id="searchBtn">Search</button>
+    <hr />
+<label for="yearSlider">Year: <span id="yearLabel">All</span></label><br />
+<input type="range" id="yearSlider" min="1400" max="2025" step="1" value="2025" />
+
 
   </div>
 
@@ -93,6 +97,48 @@
     console.error(err);
     alert('Failed to load species data');
   }
+});
+let allObservations = [];  // Stores full results from GBIF
+
+document.getElementById('searchBtn').addEventListener('click', async () => {
+  const species = document.getElementById('speciesInput').value.trim();
+  if (!species) return alert('Enter a species name');
+
+  const encoded = encodeURIComponent(species);
+  const res = await fetch(`https://api.gbif.org/v1/occurrence/search?scientificName=${encoded}&limit=300`);
+  const data = await res.json();
+
+  allObservations = data.results
+    .filter(obs =>
+      obs.decimalLatitude &&
+      obs.decimalLongitude &&
+      obs.year
+    ).map(obs => ({
+      lat: obs.decimalLatitude,
+      lng: obs.decimalLongitude,
+      year: obs.year,
+      color: 'orange',
+      size: 0.4
+    }));
+
+  if (!allObservations.length) {
+    alert("No valid observations found.");
+    return;
+  }
+
+  updateGlobePoints();
+});
+
+function updateGlobePoints() {
+  const year = parseInt(document.getElementById('yearSlider').value, 10);
+  document.getElementById('yearLabel').textContent = year;
+
+  const filtered = allObservations.filter(p => p.year <= year);
+  globe.pointsData(filtered);
+}
+
+document.getElementById('yearSlider').addEventListener('input', () => {
+  updateGlobePoints();
 });
 
   </script>
