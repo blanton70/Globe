@@ -51,7 +51,7 @@
   <script src="https://unpkg.com/globe.gl"></script>
 
   <script>
-    <script>
+<script>
   const textureURLs = {
     satellite: 'https://unpkg.com/three-globe/example/img/earth-blue-marble.jpg',
     political: 'https://upload.wikimedia.org/wikipedia/commons/4/41/Political_World_Map_2021.png',
@@ -59,7 +59,6 @@
     ecoregions: 'https://storage.googleapis.com/eco-globe-maps/ecoregions.jpg'
   };
 
-  const Globe = window.Globe;
   const globe = Globe()(document.getElementById('globeViz'))
     .pointsData([])
     .pointAltitude(0.01)
@@ -84,6 +83,7 @@
   const endYearLabel = document.getElementById('endYearLabel');
   const observationCount = document.getElementById('observationCount');
 
+  // 🟡 Update year labels on slider move
   startYearSlider.addEventListener('input', () => {
     startYearLabel.textContent = startYearSlider.value;
     clampYears();
@@ -94,17 +94,16 @@
     clampYears();
   });
 
+  // 🔒 Prevent start year > end year
   function clampYears() {
-    let start = parseInt(startYearSlider.value);
-    let end = parseInt(endYearSlider.value);
+    const start = parseInt(startYearSlider.value);
+    const end = parseInt(endYearSlider.value);
+
     if (start > end) {
-      end = start;
-      endYearSlider.value = end;
-      endYearLabel.textContent = end;
+      endYearSlider.value = start;
+      endYearLabel.textContent = start;
     }
   }
-
-  let allObservations = [];
 
   document.getElementById('searchBtn').addEventListener('click', async () => {
     const species = document.getElementById('speciesInput').value.trim();
@@ -114,13 +113,14 @@
     if (!species) return alert('Enter a species name');
 
     const encoded = encodeURIComponent(species);
+    const url = `https://api.gbif.org/v1/occurrence/search?scientificName=${encoded}&year=${startYear},${endYear}&limit=300`;
 
     try {
-      const res = await fetch(`https://api.gbif.org/v1/occurrence/search?scientificName=${encoded}&year=${startYear},${endYear}&limit=300`);
+      const res = await fetch(url);
       const data = await res.json();
 
-      allObservations = data.results
-        .filter(obs => obs.decimalLatitude && obs.decimalLongitude && obs.year)
+      const points = data.results
+        .filter(obs => obs.decimalLatitude && obs.decimalLongitude)
         .map(obs => ({
           lat: obs.decimalLatitude,
           lng: obs.decimalLongitude,
@@ -129,20 +129,16 @@
           size: 0.4
         }));
 
-      if (!allObservations.length) {
-        alert("No valid observations found.");
-        globe.pointsData([]);
-        observationCount.textContent = `Observations: 0`;
-        return;
-      }
-
-      globe.pointsData(allObservations);
-      observationCount.textContent = `Observations: ${allObservations.length}`;
+      globe.pointsData(points);
+      observationCount.textContent = `Observations: ${points.length}`;
     } catch (err) {
       console.error(err);
+      observationCount.textContent = `Observations: 0`;
       alert('Failed to load species data');
     }
   });
+</script>
+
 </script>
 
 
