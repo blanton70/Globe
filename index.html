@@ -42,7 +42,7 @@
 
 <label for="endYearSlider">End Year: <span id="endYearLabel">2025</span></label><br />
 <input type="range" id="endYearSlider" min="1800" max="2025" step="1" value="2025" /><br />
-
+<p id="observationCount">Observations: 0</p>
 
   </div>
 
@@ -135,7 +135,8 @@ const startYear = parseInt(startYearSlider.value, 10);
     return;
   }
 
-  updateGlobePoints(console.log(`Showing ${filtered.length} observations`););
+  updateGlobePoints()
+    ;
 });
 
 function updateGlobePoints() {
