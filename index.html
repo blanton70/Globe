@@ -26,6 +26,19 @@
     }
   </style>
 </head>
+  <div id="tooltip" style="
+  position: absolute;
+  background: rgba(0, 0, 0, 0.75);
+  color: white;
+  padding: 8px;
+  border-radius: 4px;
+  pointer-events: none;
+  font-size: 13px;
+  max-width: 240px;
+  display: none;
+  z-index: 1000;
+"></div>
+
 <body>
   <div id="globeViz"></div>
   <div id="controls">
@@ -66,13 +79,7 @@
     .pointRadius('size')
     .globeImageUrl(textureURLs.satellite)
     .backgroundImageUrl('https://unpkg.com/three-globe/example/img/night-sky.png')
-      .labelLat('lat')
-  .labelLng('lng')
-  .labelText('label')  // Use the `label` field as hover content
-  .labelSize(1.8)
-  .labelDotRadius(0.4)
-  .labelColor(() => 'rgba(255, 255, 255, 0.8)')
-  .labelResolution(3);
+     
 
   globe.controls().autoRotate = true;
   globe.controls().autoRotateSpeed = 0.3;
@@ -159,6 +166,17 @@ const points = data.results
 
 
       globe.pointsData(points);
+      globe.htmlElementsData(points)
+  .htmlLat(d => d.lat)
+  .htmlLng(d => d.lng)
+  .htmlElement(d => {
+    const el = document.createElement('div');
+    el.innerHTML = d.label;
+    el.style.opacity = 0;
+    el.style.position = 'absolute';  // required to stay hidden
+    return el;
+  });
+
       observationCount.textContent = `Observations: ${points.length}`;
     } catch (err) {
       console.error(err);
