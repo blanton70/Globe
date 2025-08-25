@@ -94,6 +94,16 @@
     controls.minDistance = 50;
     controls.maxDistance = 500;
 
+    document.getElementById('zoomInBtn').addEventListener('click', () => {
+  controls.dollyIn(1.2);  // Zoom in by factor 1.2
+  controls.update();
+});
+
+document.getElementById('zoomOutBtn').addEventListener('click', () => {
+  controls.dollyOut(1.2); // Zoom out by factor 1.2
+  controls.update();
+});
+
     document.querySelectorAll("input[name='layer']").forEach(input => {
       input.addEventListener("change", e => {
         const selected = e.target.value;
@@ -101,16 +111,9 @@
       });
     });
 
-// Fallback: manipulate camera position on the Z axis relative to target
-document.getElementById('zoomInBtn').addEventListener('click', () => {
-  controls.minDistance = 50;
-  controls.maxDistance = 500;
-  controls.dollyIn(1.1);  // Zoom in by 10%
-});
 
-document.getElementById('zoomOutBtn').addEventListener('click', () => {
-  controls.dollyOut(1.1); // Zoom out by 10%
-});
+
+
 
 
     const startYearSlider = document.getElementById('startYearSlider');
