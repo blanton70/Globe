@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Globe with Layer Switching</title>
+  <title>Globe with Species Observations</title>
   <style>
     html, body {
       margin: 0;
@@ -23,221 +23,188 @@
       background: rgba(255,255,255,0.9);
       padding: 10px;
       border-radius: 6px;
-      <hr />
-<button id="zoomInBtn">Zoom In</button>
-<button id="zoomOutBtn">Zoom Out</button>
+    }
+    #tooltip {
+      position: absolute;
+      background: rgba(0, 0, 0, 0.8);
+      color: white;
+      padding: 8px;
+      border-radius: 4px;
+      pointer-events: none;
+      font-size: 13px;
+      max-width: 240px;
+      display: none;
+      z-index: 1000;
     }
   </style>
 </head>
-  <div id="tooltip" style="
-  position: absolute;
-  background: rgba(0, 0, 0, 0.75);
-  color: white;
-  padding: 8px;
-  border-radius: 4px;
-  pointer-events: none;
-  font-size: 13px;
-  max-width: 240px;
-  display: none;
-  z-index: 1000;
-"></div>
-
 <body>
   <div id="globeViz"></div>
+  <div id="tooltip"></div>
+
   <div id="controls">
     <label><input type="radio" name="layer" value="satellite" checked> Satellite</label><br>
     <label><input type="radio" name="layer" value="political"> Political</label><br>
     <label><input type="radio" name="layer" value="topo"> Topographic</label><br>
-    <label><input type="radio" name="layer" value="ecoregions"> Ecoregions</label>
+    <label><input type="radio" name="layer" value="ecoregions"> Ecoregions</label><br>
     <hr/>
-<input type="text" id="speciesInput" placeholder="Enter species name (e.g. Panthera leo)">
-<button id="searchBtn">Search</button>
-   <hr />
-<label for="startYearSlider">Start Year: <span id="startYearLabel">1800</span></label><br />
-<input type="range" id="startYearSlider" min="1800" max="2025" step="1" value="1800" /><br />
+    <input type="text" id="speciesInput" placeholder="Enter species name (e.g. Panthera leo)">
+    <button id="searchBtn">Search</button>
+    <hr/>
+    <label for="startYearSlider">Start Year: <span id="startYearLabel">1800</span></label><br/>
+    <input type="range" id="startYearSlider" min="1800" max="2025" step="1" value="1800"><br/>
 
-<label for="endYearSlider">End Year: <span id="endYearLabel">2025</span></label><br />
-<input type="range" id="endYearSlider" min="1800" max="2025" step="1" value="2025" /><br />
-<p id="observationCount">Observations: 0</p>
+    <label for="endYearSlider">End Year: <span id="endYearLabel">2025</span></label><br/>
+    <input type="range" id="endYearSlider" min="1800" max="2025" step="1" value="2025"><br/>
 
+    <p id="observationCount">Observations: 0</p>
+    <button id="zoomInBtn">Zoom In</button>
+    <button id="zoomOutBtn">Zoom Out</button>
   </div>
 
-  <!-- Load Globe.gl and Three.js -->
+  <!-- Load Three.js and Globe.gl -->
   <script src="https://unpkg.com/three"></script>
   <script src="https://unpkg.com/globe.gl"></script>
 
   <script>
-
-  const textureURLs = {
-    satellite: 'https://unpkg.com/three-globe/example/img/earth-blue-marble.jpg',
-    political: 'https://upload.wikimedia.org/wikipedia/commons/4/41/Political_World_Map_2021.png',
-    topo: 'https://eoimages.gsfc.nasa.gov/images/imagerecords/74000/74192/world.topo.bathy.200412.3x5400x2700.jpg',
-    ecoregions: 'https://storage.googleapis.com/eco-globe-maps/ecoregions.jpg'
-  };
-
-  const globe = Globe()(document.getElementById('globeViz'))
-    .pointsData([])
-    .pointAltitude(0.01)
-    .pointColor('color')
-    .pointRadius('size')
-    .globeImageUrl(textureURLs.satellite)
-    .backgroundImageUrl('https://unpkg.com/three-globe/example/img/night-sky.png')
-     
-
-  globe.controls().autoRotate = false;
-  globe.controls().autoRotateSpeed = 0.3;
-    const controls = globe.controls();
-controls.enableZoom = true;           // ✅ allow zooming
-controls.zoomSpeed = 1.2;             // optional: make zooming smoother
-controls.minDistance = 50;            // how close you can zoom in
-controls.maxDistance = 500;           // how far you can zoom out
-
-
-  document.querySelectorAll("input[name='layer']").forEach(input => {
-    input.addEventListener("change", e => {
-      const selected = e.target.value;
-      globe.globeImageUrl(textureURLs[selected]);
-    });
-  });
-    document.getElementById('zoomInBtn').addEventListener('click', () => {
-  const cam = globe.camera();
-  const controls = globe.controls();
-  cam.position.z -= 20;
-  controls.update();
-});
-
-document.getElementById('zoomOutBtn').addEventListener('click', () => {
-  const cam = globe.camera();
-  const controls = globe.controls();
-  cam.position.z += 20;
-  controls.update();
-});
-
-
-  const startYearSlider = document.getElementById('startYearSlider');
-  const endYearSlider = document.getElementById('endYearSlider');
-  const startYearLabel = document.getElementById('startYearLabel');
-  const endYearLabel = document.getElementById('endYearLabel');
-  const observationCount = document.getElementById('observationCount');
-
-  // 🟡 Update year labels on slider move
-  startYearSlider.addEventListener('input', () => {
-    startYearLabel.textContent = startYearSlider.value;
-    clampYears();
-  });
-
-  endYearSlider.addEventListener('input', () => {
-    endYearLabel.textContent = endYearSlider.value;
-    clampYears();
-  });
-
-  // 🔒 Prevent start year > end year
-  function clampYears() {
-    const start = parseInt(startYearSlider.value);
-    const end = parseInt(endYearSlider.value);
-
-    if (start > end) {
-      endYearSlider.value = start;
-      endYearLabel.textContent = start;
-    }
-  }
-
-  document.getElementById('searchBtn').addEventListener('click', async () => {
-    const species = document.getElementById('speciesInput').value.trim();
-    const startYear = parseInt(startYearSlider.value, 10);
-    const endYear = parseInt(endYearSlider.value, 10);
-
-    if (!species) return alert('Enter a species name');
-
-    const encoded = encodeURIComponent(species);
-    const url = `https://api.gbif.org/v1/occurrence/search?scientificName=${encoded}&year=${startYear},${endYear}&limit=300`;
-
-    try {
-      const res = await fetch(url);
-      const data = await res.json();
-
-const points = data.results
-  .filter(obs => obs.decimalLatitude && obs.decimalLongitude)
-  .map(obs => {
-    const lat = obs.decimalLatitude;
-    const lng = obs.decimalLongitude;
-    const year = obs.year || "Unknown year";
-    const country = obs.country || "Unknown country";
-    const species = obs.species || species;
-
-    const imageUrl = (obs.media && obs.media.length && obs.media[0].identifier) || null;
-
-    const labelHTML = `
-      <div style="text-align:left; max-width: 200px;">
-        <strong>${species}</strong><br/>
-        <em>${country}</em><br/>
-        Year: ${year}<br/>
-        Lat: ${lat.toFixed(2)}, Lng: ${lng.toFixed(2)}<br/>
-        ${imageUrl ? `<img src="${imageUrl}" width="100" style="margin-top:5px;border-radius:4px;" />` : ""}
-      </div>
-    `;
-
-    return {
-      lat,
-      lng,
-      year,
-      color: 'orange',
-      size: 0.4,
-      label: labelHTML
+    const textureURLs = {
+      satellite: 'https://unpkg.com/three-globe/example/img/earth-blue-marble.jpg',
+      political: 'https://upload.wikimedia.org/wikipedia/commons/4/41/Political_World_Map_2021.png',
+      topo: 'https://eoimages.gsfc.nasa.gov/images/imagerecords/74000/74192/world.topo.bathy.200412.3x5400x2700.jpg',
+      ecoregions: 'https://storage.googleapis.com/eco-globe-maps/ecoregions.jpg'
     };
-  });
 
+    const globe = Globe()(document.getElementById('globeViz'))
+      .globeImageUrl(textureURLs.satellite)
+      .backgroundImageUrl('https://unpkg.com/three-globe/example/img/night-sky.png')
+      .pointAltitude(0.01)
+      .pointColor('color')
+      .pointRadius('size')
+      .labelLat('lat')
+      .labelLng('lng')
+      .labelText('label')
+      .labelSize(1.2)
+      .labelDotRadius(0.3)
+      .labelColor(() => 'rgba(255,255,255,0.9)');
 
-      globe.pointsData(points);
-      globe.htmlElementsData(points)
-  .htmlLat(d => d.lat)
-  .htmlLng(d => d.lng)
-  .htmlElement(d => {
-    const el = document.createElement('div');
-    el.innerHTML = d.label;
-    el.style.opacity = 0;
-    el.style.position = 'absolute';  // required to stay hidden
-    return el;
-  });
+    const controls = globe.controls();
+    controls.autoRotate = false;
+    controls.enableZoom = true;
+    controls.zoomSpeed = 1.2;
+    controls.minDistance = 50;
+    controls.maxDistance = 500;
 
-      observationCount.textContent = `Observations: ${points.length}`;
-    } catch (err) {
-      console.error(err);
-      observationCount.textContent = `Observations: 0`;
-      alert('Failed to load species data');
-    }
-  });
-    const tooltip = document.getElementById('tooltip');
-const raycaster = new THREE.Raycaster();
-const mouse = new THREE.Vector2();
-let hoveredObject = null;
+    document.querySelectorAll("input[name='layer']").forEach(input => {
+      input.addEventListener("change", e => {
+        const selected = e.target.value;
+        globe.globeImageUrl(textureURLs[selected]);
+      });
+    });
 
-document.addEventListener('mousemove', event => {
-  const { clientX, clientY } = event;
-  const { left, top, width, height } = globe.renderer().domElement.getBoundingClientRect();
+    document.getElementById('zoomInBtn').addEventListener('click', () => {
+      globe.camera().position.z -= 20;
+    });
 
-  // Normalize mouse position
-  mouse.x = ((clientX - left) / width) * 2 - 1;
-  mouse.y = -((clientY - top) / height) * 2 + 1;
+    document.getElementById('zoomOutBtn').addEventListener('click', () => {
+      globe.camera().position.z += 20;
+    });
 
-  raycaster.setFromCamera(mouse, globe.camera());
+    const startYearSlider = document.getElementById('startYearSlider');
+    const endYearSlider = document.getElementById('endYearSlider');
+    const startYearLabel = document.getElementById('startYearLabel');
+    const endYearLabel = document.getElementById('endYearLabel');
+    const observationCount = document.getElementById('observationCount');
 
-  const intersects = raycaster.intersectObjects(globe.scene().children, true);
-  const pointObj = intersects.find(i => i.object && i.object.__globeObjType === 'point');
+    startYearSlider.addEventListener('input', () => {
+      startYearLabel.textContent = startYearSlider.value;
+      if (parseInt(startYearSlider.value) > parseInt(endYearSlider.value)) {
+        endYearSlider.value = startYearSlider.value;
+        endYearLabel.textContent = endYearSlider.value;
+      }
+    });
 
-  if (pointObj && pointObj.object.__data) {
-    const data = pointObj.object.__data;
-    tooltip.innerHTML = data.label;
-    tooltip.style.left = `${clientX + 10}px`;
-    tooltip.style.top = `${clientY + 10}px`;
-    tooltip.style.display = 'block';
-    hoveredObject = pointObj;
-  } else {
-    tooltip.style.display = 'none';
-    hoveredObject = null;
-  }
-});
+    endYearSlider.addEventListener('input', () => {
+      endYearLabel.textContent = endYearSlider.value;
+      if (parseInt(endYearSlider.value) < parseInt(startYearSlider.value)) {
+        startYearSlider.value = endYearSlider.value;
+        startYearLabel.textContent = startYearSlider.value;
+      }
+    });
 
-</script>
+    document.getElementById('searchBtn').addEventListener('click', async () => {
+      const species = document.getElementById('speciesInput').value.trim();
+      const startYear = parseInt(startYearSlider.value);
+      const endYear = parseInt(endYearSlider.value);
+      if (!species) return alert("Please enter a species name.");
+
+      const encoded = encodeURIComponent(species);
+      const url = `https://api.gbif.org/v1/occurrence/search?scientificName=${encoded}&year=${startYear},${endYear}&limit=300`;
+
+      try {
+        const res = await fetch(url);
+        const data = await res.json();
+
+        const points = data.results
+          .filter(obs => obs.decimalLatitude && obs.decimalLongitude)
+          .map(obs => {
+            const lat = obs.decimalLatitude;
+            const lng = obs.decimalLongitude;
+            const year = obs.year || "Unknown";
+            const country = obs.country || "Unknown";
+            const speciesName = obs.species || species;
+            const imageUrl = (obs.media && obs.media.length && obs.media[0].identifier) || null;
+
+            const label = `
+              ${speciesName}
+              ${country}, ${year}
+            `;
+
+            const tooltip = `
+              <div style="text-align:left;">
+                <strong>${speciesName}</strong><br/>
+                <em>${country}</em><br/>
+                Year: ${year}<br/>
+                Lat: ${lat.toFixed(2)}, Lng: ${lng.toFixed(2)}<br/>
+                ${imageUrl ? `<img src="${imageUrl}" width="100" style="margin-top:5px;border-radius:4px;" />` : ""}
+              </div>
+            `;
+
+            return {
+              lat,
+              lng,
+              year,
+              label,
+              tooltip,
+              color: 'orange',
+              size: 0.4
+            };
+          });
+
+        globe.pointsData(points);
+
+        // Hover tooltip
+        const tooltipDiv = document.getElementById('tooltip');
+        globe.onPointHover(point => {
+          if (point) {
+            tooltipDiv.innerHTML = point.tooltip;
+            tooltipDiv.style.display = 'block';
+          } else {
+            tooltipDiv.style.display = 'none';
+          }
+        });
+
+        document.addEventListener('mousemove', e => {
+          tooltipDiv.style.left = `${e.clientX + 10}px`;
+          tooltipDiv.style.top = `${e.clientY + 10}px`;
+        });
+
+        observationCount.textContent = `Observations: ${points.length}`;
+      } catch (err) {
+        console.error(err);
+        observationCount.textContent = 'Observations: 0';
+        alert("Failed to load GBIF data.");
+      }
+    });
+  </script>
 </body>
 </html>
