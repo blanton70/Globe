@@ -16,6 +16,7 @@
       padding: 10px;
       border-radius: 8px;
       font-family: sans-serif;
+      z-index: 10;
     }
   </style>
 </head>
@@ -29,45 +30,45 @@
   </div>
 
   <script>
-    // Initialize Cesium viewer
-    const viewer = new Cesium.Viewer("cesiumContainer", {
-      baseLayerPicker: false,
-      terrainProvider: Cesium.createWorldTerrain()
-    });
-
-    // Base layers
-    const layers = {
-      satellite: Cesium.IonImageryProvider.fromAssetId(3845), // Sentinel-2
-      terrain: Cesium.createWorldTerrain(),
-      political: new Cesium.UrlTemplateImageryProvider({
-        url: "https://a.tile.openstreetmap.org/{z}/{x}/{y}.png",
-        credit: "© OpenStreetMap contributors"
-      }),
-      ecoregions: new Cesium.UrlTemplateImageryProvider({
-        url: "https://server.arcgisonline.com/ArcGIS/rest/services/USA_Ecoregions/MapServer/tile/{z}/{y}/{x}", 
-        credit: "ESRI"
-      })
-    };
-
-    let currentImageryLayer = viewer.imageryLayers.addImageryProvider(await layers.satellite);
-
-    // Layer switching
-    document.querySelectorAll("input[name='layer']").forEach((input) => {
-      input.addEventListener("change", async (e) => {
-        viewer.imageryLayers.remove(currentImageryLayer);
-
-        const selected = e.target.value;
-
-        if (selected === "terrain") {
-          // Use satellite image + terrain
-          viewer.terrainProvider = Cesium.createWorldTerrain();
-          currentImageryLayer = viewer.imageryLayers.addImageryProvider(await layers.satellite);
-        } else {
-          viewer.terrainProvider = new Cesium.EllipsoidTerrainProvider(); // flat
-          currentImageryLayer = viewer.imageryLayers.addImageryProvider(await layers[selected]);
-        }
+    // Wrap everything in an async function
+    (async function () {
+      const viewer = new Cesium.Viewer("cesiumContainer", {
+        baseLayerPicker: false,
+        terrainProvider: Cesium.createWorldTerrain()
       });
-    });
+
+      // Define layers
+      const layers = {
+        satellite: await Cesium.IonImageryProvider.fromAssetId(3845), // Sentinel-2
+        political: new Cesium.UrlTemplateImageryProvider({
+          url: "https://a.tile.openstreetmap.org/{z}/{x}/{y}.png",
+          credit: "© OpenStreetMap contributors"
+        }),
+        ecoregions: new Cesium.UrlTemplateImageryProvider({
+          url: "https://server.arcgisonline.com/ArcGIS/rest/services/USA_Ecoregions/MapServer/tile/{z}/{y}/{x}",
+          credit: "ESRI"
+        })
+      };
+
+      let currentImageryLayer = viewer.imageryLayers.addImageryProvider(layers.satellite);
+
+      // Handle radio button layer switching
+      document.querySelectorAll("input[name='layer']").forEach((input) => {
+        input.addEventListener("change", async (e) => {
+          viewer.imageryLayers.remove(currentImageryLayer);
+
+          const selected = e.target.value;
+
+          if (selected === "terrain") {
+            viewer.terrainProvider = Cesium.createWorldTerrain();
+            currentImageryLayer = viewer.imageryLayers.addImageryProvider(layers.satellite);
+          } else {
+            viewer.terrainProvider = new Cesium.EllipsoidTerrainProvider(); // flat
+            currentImageryLayer = viewer.imageryLayers.addImageryProvider(layers[selected]);
+          }
+        });
+      });
+    })();
   </script>
 </body>
 </html>
