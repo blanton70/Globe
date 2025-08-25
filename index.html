@@ -33,6 +33,10 @@
     <label><input type="radio" name="layer" value="political"> Political</label><br>
     <label><input type="radio" name="layer" value="topo"> Topographic</label><br>
     <label><input type="radio" name="layer" value="ecoregions"> Ecoregions</label>
+    <hr/>
+<input type="text" id="speciesInput" placeholder="Enter species name (e.g. Panthera leo)">
+<button id="searchBtn">Search</button>
+
   </div>
 
   <!-- Load Globe.gl and Three.js -->
@@ -49,6 +53,10 @@
 
     const Globe = window.Globe;
     const globe = Globe()(document.getElementById('globeViz'))
+        .pointsData([])  // start empty
+        .pointAltitude(0.01)
+         .pointColor('color')
+        .pointRadius('size')
       .globeImageUrl(textureURLs.satellite)
       .backgroundImageUrl('https://unpkg.com/three-globe/example/img/night-sky.png');
 
@@ -61,6 +69,32 @@
         globe.globeImageUrl(textureURLs[selected]);
       });
     });
+    document.getElementById('searchBtn').addEventListener('click', async () => {
+  const species = document.getElementById('speciesInput').value.trim();
+  if (!species) return alert('Enter a species name');
+
+  const encoded = encodeURIComponent(species);
+
+  try {
+    const res = await fetch(`https://api.gbif.org/v1/occurrence/search?scientificName=${encoded}&limit=500`);
+    const data = await res.json();
+
+    const points = data.results
+      .filter(obs => obs.decimalLatitude && obs.decimalLongitude)
+      .map(obs => ({
+        lat: obs.decimalLatitude,
+        lng: obs.decimalLongitude,
+        size: 0.5,
+        color: 'orange'
+      }));
+
+    globe.pointsData(points);
+  } catch (err) {
+    console.error(err);
+    alert('Failed to load species data');
+  }
+});
+
   </script>
 </body>
 </html>
