@@ -36,9 +36,12 @@
     <hr/>
 <input type="text" id="speciesInput" placeholder="Enter species name (e.g. Panthera leo)">
 <button id="searchBtn">Search</button>
-    <hr />
-<label for="yearSlider">Year: <span id="yearLabel">All</span></label><br />
-<input type="range" id="yearSlider" min="1400" max="2025" step="1" value="2025" />
+   <hr />
+<label for="startYearSlider">Start Year: <span id="startYearLabel">1800</span></label><br />
+<input type="range" id="startYearSlider" min="1800" max="2025" step="1" value="1800" /><br />
+
+<label for="endYearSlider">End Year: <span id="endYearLabel">2025</span></label><br />
+<input type="range" id="endYearSlider" min="1800" max="2025" step="1" value="2025" /><br />
 
 
   </div>
@@ -104,9 +107,15 @@ document.getElementById('searchBtn').addEventListener('click', async () => {
   const species = document.getElementById('speciesInput').value.trim();
   if (!species) return alert('Enter a species name');
 
+const startYear = parseInt(startYearSlider.value, 10);
+  const endYear = parseInt(endYearSlider.value, 10);
+
+  if (!species) return alert('Enter a species name');
+
   const encoded = encodeURIComponent(species);
-  const res = await fetch(`https://api.gbif.org/v1/occurrence/search?scientificName=${encoded}&limit=300`);
+  const res = await fetch(`https://api.gbif.org/v1/occurrence/search?scientificName=${encoded}&year=${startYear},${endYear}&limit=300`);
   const data = await res.json();
+
 
   allObservations = data.results
     .filter(obs =>
@@ -126,7 +135,7 @@ document.getElementById('searchBtn').addEventListener('click', async () => {
     return;
   }
 
-  updateGlobePoints();
+  updateGlobePoints(console.log(`Showing ${filtered.length} observations`););
 });
 
 function updateGlobePoints() {
