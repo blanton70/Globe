@@ -51,105 +51,100 @@
   <script src="https://unpkg.com/globe.gl"></script>
 
   <script>
-    const textureURLs = {
-      satellite: 'https://unpkg.com/three-globe/example/img/earth-blue-marble.jpg',
-      political: 'https://upload.wikimedia.org/wikipedia/commons/4/41/Political_World_Map_2021.png',
-      topo: 'https://eoimages.gsfc.nasa.gov/images/imagerecords/74000/74192/world.topo.bathy.200412.3x5400x2700.jpg',
-      ecoregions: 'https://storage.googleapis.com/eco-globe-maps/ecoregions.jpg' // Example custom
-    };
+    <script>
+  const textureURLs = {
+    satellite: 'https://unpkg.com/three-globe/example/img/earth-blue-marble.jpg',
+    political: 'https://upload.wikimedia.org/wikipedia/commons/4/41/Political_World_Map_2021.png',
+    topo: 'https://eoimages.gsfc.nasa.gov/images/imagerecords/74000/74192/world.topo.bathy.200412.3x5400x2700.jpg',
+    ecoregions: 'https://storage.googleapis.com/eco-globe-maps/ecoregions.jpg'
+  };
 
-    const Globe = window.Globe;
-    const globe = Globe()(document.getElementById('globeViz'))
-        .pointsData([])  // start empty
-        .pointAltitude(0.01)
-         .pointColor('color')
-        .pointRadius('size')
-      .globeImageUrl(textureURLs.satellite)
-      .backgroundImageUrl('https://unpkg.com/three-globe/example/img/night-sky.png');
+  const Globe = window.Globe;
+  const globe = Globe()(document.getElementById('globeViz'))
+    .pointsData([])
+    .pointAltitude(0.01)
+    .pointColor('color')
+    .pointRadius('size')
+    .globeImageUrl(textureURLs.satellite)
+    .backgroundImageUrl('https://unpkg.com/three-globe/example/img/night-sky.png');
 
-    globe.controls().autoRotate = true;
-    globe.controls().autoRotateSpeed = 0.3;
+  globe.controls().autoRotate = true;
+  globe.controls().autoRotateSpeed = 0.3;
 
-    document.querySelectorAll("input[name='layer']").forEach(input => {
-      input.addEventListener("change", e => {
-        const selected = e.target.value;
-        globe.globeImageUrl(textureURLs[selected]);
-      });
+  document.querySelectorAll("input[name='layer']").forEach(input => {
+    input.addEventListener("change", e => {
+      const selected = e.target.value;
+      globe.globeImageUrl(textureURLs[selected]);
     });
-    document.getElementById('searchBtn').addEventListener('click', async () => {
-  const species = document.getElementById('speciesInput').value.trim();
-  if (!species) return alert('Enter a species name');
+  });
 
-  const encoded = encodeURIComponent(species);
+  const startYearSlider = document.getElementById('startYearSlider');
+  const endYearSlider = document.getElementById('endYearSlider');
+  const startYearLabel = document.getElementById('startYearLabel');
+  const endYearLabel = document.getElementById('endYearLabel');
+  const observationCount = document.getElementById('observationCount');
 
-  try {
-    const res = await fetch(`https://api.gbif.org/v1/occurrence/search?scientificName=${encoded}&limit=500`);
-    const data = await res.json();
+  startYearSlider.addEventListener('input', () => {
+    startYearLabel.textContent = startYearSlider.value;
+    clampYears();
+  });
 
-    const points = data.results
-      .filter(obs => obs.decimalLatitude && obs.decimalLongitude)
-      .map(obs => ({
-        lat: obs.decimalLatitude,
-        lng: obs.decimalLongitude,
-        size: 0.5,
-        color: 'orange'
-      }));
+  endYearSlider.addEventListener('input', () => {
+    endYearLabel.textContent = endYearSlider.value;
+    clampYears();
+  });
 
-    globe.pointsData(points);
-  } catch (err) {
-    console.error(err);
-    alert('Failed to load species data');
-  }
-});
-let allObservations = [];  // Stores full results from GBIF
-
-document.getElementById('searchBtn').addEventListener('click', async () => {
-  const species = document.getElementById('speciesInput').value.trim();
-  if (!species) return alert('Enter a species name');
-
-const startYear = parseInt(startYearSlider.value, 10);
-  const endYear = parseInt(endYearSlider.value, 10);
-
-  if (!species) return alert('Enter a species name');
-
-  const encoded = encodeURIComponent(species);
-  const res = await fetch(`https://api.gbif.org/v1/occurrence/search?scientificName=${encoded}&year=${startYear},${endYear}&limit=300`);
-  const data = await res.json();
-
-
-  allObservations = data.results
-    .filter(obs =>
-      obs.decimalLatitude &&
-      obs.decimalLongitude &&
-      obs.year
-    ).map(obs => ({
-      lat: obs.decimalLatitude,
-      lng: obs.decimalLongitude,
-      year: obs.year,
-      color: 'orange',
-      size: 0.4
-    }));
-
-  if (!allObservations.length) {
-    alert("No valid observations found.");
-    return;
+  function clampYears() {
+    let start = parseInt(startYearSlider.value);
+    let end = parseInt(endYearSlider.value);
+    if (start > end) {
+      end = start;
+      endYearSlider.value = end;
+      endYearLabel.textContent = end;
+    }
   }
 
-  updateGlobePoints()
-    ;
-});
+  let allObservations = [];
 
-function updateGlobePoints() {
-  const year = parseInt(document.getElementById('yearSlider').value, 10);
-  document.getElementById('yearLabel').textContent = year;
+  document.getElementById('searchBtn').addEventListener('click', async () => {
+    const species = document.getElementById('speciesInput').value.trim();
+    const startYear = parseInt(startYearSlider.value, 10);
+    const endYear = parseInt(endYearSlider.value, 10);
 
-  const filtered = allObservations.filter(p => p.year <= year);
-  globe.pointsData(filtered);
-}
+    if (!species) return alert('Enter a species name');
 
-document.getElementById('yearSlider').addEventListener('input', () => {
-  updateGlobePoints();
-});
+    const encoded = encodeURIComponent(species);
+
+    try {
+      const res = await fetch(`https://api.gbif.org/v1/occurrence/search?scientificName=${encoded}&year=${startYear},${endYear}&limit=300`);
+      const data = await res.json();
+
+      allObservations = data.results
+        .filter(obs => obs.decimalLatitude && obs.decimalLongitude && obs.year)
+        .map(obs => ({
+          lat: obs.decimalLatitude,
+          lng: obs.decimalLongitude,
+          year: obs.year,
+          color: 'orange',
+          size: 0.4
+        }));
+
+      if (!allObservations.length) {
+        alert("No valid observations found.");
+        globe.pointsData([]);
+        observationCount.textContent = `Observations: 0`;
+        return;
+      }
+
+      globe.pointsData(allObservations);
+      observationCount.textContent = `Observations: ${allObservations.length}`;
+    } catch (err) {
+      console.error(err);
+      alert('Failed to load species data');
+    }
+  });
+</script>
+
 
   </script>
 </body>
