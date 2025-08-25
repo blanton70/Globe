@@ -101,17 +101,17 @@
       });
     });
 
-   document.getElementById('zoomInBtn').addEventListener('click', () => {
-  // Move camera closer by decreasing distance but clamp to minDistance
-  const newDistance = Math.max(controls.getDistance() - 20, controls.minDistance);
-  controls.setDistance(newDistance);
+// Fallback: manipulate camera position on the Z axis relative to target
+document.getElementById('zoomInBtn').addEventListener('click', () => {
+  controls.minDistance = 50;
+  controls.maxDistance = 500;
+  controls.dollyIn(1.1);  // Zoom in by 10%
 });
 
- document.getElementById('zoomOutBtn').addEventListener('click', () => {
-  // Move camera farther by increasing distance but clamp to maxDistance
-  const newDistance = Math.min(controls.getDistance() + 20, controls.maxDistance);
-  controls.setDistance(newDistance);
+document.getElementById('zoomOutBtn').addEventListener('click', () => {
+  controls.dollyOut(1.1); // Zoom out by 10%
 });
+
 
     const startYearSlider = document.getElementById('startYearSlider');
     const endYearSlider = document.getElementById('endYearSlider');
