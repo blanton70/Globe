@@ -101,13 +101,17 @@
       });
     });
 
-    document.getElementById('zoomInBtn').addEventListener('click', () => {
-      globe.camera().position.z -= 20;
-    });
+   document.getElementById('zoomInBtn').addEventListener('click', () => {
+  // Move camera closer by decreasing distance but clamp to minDistance
+  const newDistance = Math.max(controls.getDistance() - 20, controls.minDistance);
+  controls.setDistance(newDistance);
+});
 
-    document.getElementById('zoomOutBtn').addEventListener('click', () => {
-      globe.camera().position.z += 20;
-    });
+ document.getElementById('zoomOutBtn').addEventListener('click', () => {
+  // Move camera farther by increasing distance but clamp to maxDistance
+  const newDistance = Math.min(controls.getDistance() + 20, controls.maxDistance);
+  controls.setDistance(newDistance);
+});
 
     const startYearSlider = document.getElementById('startYearSlider');
     const endYearSlider = document.getElementById('endYearSlider');
