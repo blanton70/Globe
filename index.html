@@ -155,7 +155,7 @@
       if (!species) return alert("Please enter a species name.");
 
       const encoded = encodeURIComponent(species);
-const url = `https://api.gbif.org/v1/occurrence/search?scientificName=${encoded}&limit=300&fq=year:[${startYear} TO ${endYear}]`;
+      const url = `https://api.gbif.org/v1/occurrence/search?scientificName=${encoded}&limit=300&year=${startYear},${endYear}`;
 
       try {
         const res = await fetch(url);
