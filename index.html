@@ -97,18 +97,25 @@
 document.getElementById('zoomInBtn').addEventListener('click', () => {
   const cam = globe.camera();
   const controls = globe.controls();
-  // Move camera closer along its viewing direction
-  cam.position.z = Math.max(50, cam.position.z - 20);  // respect minDistance (50)
+
+  // Calculate new zoom level, but don't go below minDistance
+  const newZ = cam.position.z - 20;
+  cam.position.z = newZ < controls.minDistance ? controls.minDistance : newZ;
+
   controls.update();
 });
 
 document.getElementById('zoomOutBtn').addEventListener('click', () => {
   const cam = globe.camera();
   const controls = globe.controls();
-  // Move camera away along its viewing direction
-  cam.position.z = Math.min(500, cam.position.z + 20);  // respect maxDistance (500)
+
+  // Calculate new zoom level, but don't go beyond maxDistance
+  const newZ = cam.position.z + 20;
+  cam.position.z = newZ > controls.maxDistance ? controls.maxDistance : newZ;
+
   controls.update();
 });
+
 
 
     document.querySelectorAll("input[name='layer']").forEach(input => {
