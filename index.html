@@ -83,6 +83,12 @@
 
   globe.controls().autoRotate = false;
   globe.controls().autoRotateSpeed = 0.3;
+    const controls = globe.controls();
+controls.enableZoom = true;           // ✅ allow zooming
+controls.zoomSpeed = 1.2;             // optional: make zooming smoother
+controls.minDistance = 50;            // how close you can zoom in
+controls.maxDistance = 500;           // how far you can zoom out
+
 
   document.querySelectorAll("input[name='layer']").forEach(input => {
     input.addEventListener("change", e => {
