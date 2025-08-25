@@ -94,15 +94,22 @@
     controls.minDistance = 50;
     controls.maxDistance = 500;
 
-    document.getElementById('zoomInBtn').addEventListener('click', () => {
-  controls.dollyIn(1.2);  // Zoom in by factor 1.2
+document.getElementById('zoomInBtn').addEventListener('click', () => {
+  const cam = globe.camera();
+  const controls = globe.controls();
+  // Move camera closer along its viewing direction
+  cam.position.z = Math.max(50, cam.position.z - 20);  // respect minDistance (50)
   controls.update();
 });
 
 document.getElementById('zoomOutBtn').addEventListener('click', () => {
-  controls.dollyOut(1.2); // Zoom out by factor 1.2
+  const cam = globe.camera();
+  const controls = globe.controls();
+  // Move camera away along its viewing direction
+  cam.position.z = Math.min(500, cam.position.z + 20);  // respect maxDistance (500)
   controls.update();
 });
+
 
     document.querySelectorAll("input[name='layer']").forEach(input => {
       input.addEventListener("change", e => {
