@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Interactive 3D Globe with Layers</title>
+  <script src="https://cesium.com/downloads/cesiumjs/releases/1.120/Build/Cesium/Cesium.js"></script>
+  <link href="https://cesium.com/downloads/cesiumjs/releases/1.120/Build/Cesium/Widgets/widgets.css" rel="stylesheet" />
+  <style>
+    html, body, #cesiumContainer {
+      width: 100%; height: 100%; margin: 0; padding: 0; overflow: hidden;
+    }
+    #controls {
+      position: absolute;
+      top: 10px; left: 10px;
+      background: rgba(255, 255, 255, 0.9);
+      padding: 10px;
+      border-radius: 8px;
+      font-family: sans-serif;
+    }
+  </style>
+</head>
+<body>
+  <div id="cesiumContainer"></div>
+  <div id="controls">
+    <label><input type="radio" name="layer" value="satellite" checked> Satellite</label><br>
+    <label><input type="radio" name="layer" value="terrain"> Terrain</label><br>
+    <label><input type="radio" name="layer" value="political"> Political</label><br>
+    <label><input type="radio" name="layer" value="ecoregions"> Ecoregions</label>
+  </div>
+
+  <script>
+    // Initialize Cesium viewer
+    const viewer = new Cesium.Viewer("cesiumContainer", {
+      baseLayerPicker: false,
+      terrainProvider: Cesium.createWorldTerrain()
+    });
+
+    // Base layers
+    const layers = {
+      satellite: Cesium.IonImageryProvider.fromAssetId(3845), // Sentinel-2
+      terrain: Cesium.createWorldTerrain(),
+      political: new Cesium.UrlTemplateImageryProvider({
+        url: "https://a.tile.openstreetmap.org/{z}/{x}/{y}.png",
+        credit: "© OpenStreetMap contributors"
+      }),
+      ecoregions: new Cesium.UrlTemplateImageryProvider({
+        url: "https://server.arcgisonline.com/ArcGIS/rest/services/USA_Ecoregions/MapServer/tile/{z}/{y}/{x}", 
+        credit: "ESRI"
+      })
+    };
+
+    let currentImageryLayer = viewer.imageryLayers.addImageryProvider(await layers.satellite);
+
+    // Layer switching
+    document.querySelectorAll("input[name='layer']").forEach((input) => {
+      input.addEventListener("change", async (e) => {
+        viewer.imageryLayers.remove(currentImageryLayer);
+
+        const selected = e.target.value;
+
+        if (selected === "terrain") {
+          // Use satellite image + terrain
+          viewer.terrainProvider = Cesium.createWorldTerrain();
+          currentImageryLayer = viewer.imageryLayers.addImageryProvider(await layers.satellite);
+        } else {
+          viewer.terrainProvider = new Cesium.EllipsoidTerrainProvider(); // flat
+          currentImageryLayer = viewer.imageryLayers.addImageryProvider(await layers[selected]);
+        }
+      });
+    });
+  </script>
+</body>
+</html>
