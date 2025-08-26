@@ -168,55 +168,83 @@ document.getElementById('zoomOutBtn').addEventListener('click', () => {
       tooltipDiv.style.left = `${e.clientX + 10}px`;
       tooltipDiv.style.top = `${e.clientY + 10}px`;
     });
+  // Assign unique colors per species
+function getColorMap(speciesList) {
+  const distinctColors = [
+    '#e6194b', '#3cb44b', '#ffe119', '#4363d8', '#f58231',
+    '#911eb4', '#46f0f0', '#f032e6', '#bcf60c', '#fabebe',
+    '#008080', '#e6beff', '#9a6324', '#fffac8', '#800000',
+    '#aaffc3', '#808000', '#ffd8b1', '#000075', '#808080'
+  ];
+  const map = {};
+  speciesList.forEach((s, i) => {
+    map[s] = distinctColors[i % distinctColors.length];
+  });
+  return map;
+}
 
    document.getElementById('searchBtn').addEventListener('click', async () => {
-  const species = document.getElementById('speciesInput').value.trim();
+  const input = document.getElementById('speciesInput').value.trim();
   const startYear = parseInt(startYearSlider.value);
   const endYear = parseInt(endYearSlider.value);
+  if (!input) return alert("Please enter a species or genus name.");
 
-  if (!species) return alert("Please enter a species name.");
+  // Determine if input is species (two words) or genus (one word)
+  const words = input.split(/\s+/);
+  let queryParam = '';
+  if (words.length >= 2) {
+    // Species
+    const encodedSpecies = encodeURIComponent(words.slice(0, 2).join(' '));
+    queryParam = `scientificName=${encodedSpecies}`;
+  } else {
+    // Genus
+    const encodedGenus = encodeURIComponent(words[0]);
+    queryParam = `genus=${encodedGenus}`;
+  }
 
-  const encoded = encodeURIComponent(species);
-  const url = `https://api.gbif.org/v1/occurrence/search?scientificName=${encoded}&limit=300&year=${startYear},${endYear}`;
+  const url = `https://api.gbif.org/v1/occurrence/search?${queryParam}&limit=300&year=${startYear},${endYear}`;
 
   try {
     const res = await fetch(url);
     const data = await res.json();
 
-    const points = data.results
-      .filter(obs => obs.decimalLatitude && obs.decimalLongitude)
-      .map(obs => {
-        const lat = obs.decimalLatitude;
-        const lng = obs.decimalLongitude;
-        const year = obs.year || "Unknown";
-        const country = obs.country || "Unknown";
-        const speciesName = obs.species || species;
-        const imageUrl = (obs.media && obs.media.length && obs.media[0].identifier) || null;
+    const filtered = data.results.filter(obs => obs.decimalLatitude && obs.decimalLongitude);
+const uniqueSpecies = [...new Set(filtered.map(obs => obs.species || obs.scientificName || species))];
+const colorMap = getColorMap(uniqueSpecies);
 
-        const label = `${speciesName}\n${country}, ${year}`;
-        const tooltip = `
-          <div style="text-align:left;">
-            <strong>${speciesName}</strong><br/>
-            <em>${country}</em><br/>
-            Year: ${year}<br/>
-            Lat: ${lat.toFixed(2)}, Lng: ${lng.toFixed(2)}<br/>
-            ${imageUrl ? `<img src="${imageUrl}" width="100" style="margin-top:5px;border-radius:4px;" />` : ""}
-          </div>
-        `;
+const points = filtered.map(obs => {
+  const lat = obs.decimalLatitude;
+  const lng = obs.decimalLongitude;
+  const year = obs.year || "Unknown";
+  const country = obs.country || "Unknown";
+  const speciesName = obs.species || obs.scientificName || species;
+  const imageUrl = (obs.media && obs.media.length && obs.media[0].identifier) || null;
 
-        return {
-          lat,
-          lng,
-          year,
-          label,
-          tooltip,
-          color: 'orange',
-          size: 0.4
-        };
-      });
+  const label = `${speciesName}\n${country}, ${year}`;
+  const tooltip = `
+    <div style="text-align:left;">
+      <strong>${speciesName}</strong><br/>
+      <em>${country}</em><br/>
+      Year: ${year}<br/>
+      Lat: ${lat.toFixed(2)}, Lng: ${lng.toFixed(2)}<br/>
+      ${imageUrl ? `<img src="${imageUrl}" width="100" style="margin-top:5px;border-radius:4px;" />` : ""}
+    </div>
+  `;
 
-    globe.pointsData([]); // Clear previous points
-    globe.pointsData(points); // Set new points
+  return {
+    lat,
+    lng,
+    year,
+    label,
+    tooltip,
+    color: colorMap[speciesName] || 'orange',
+    size: 0.4
+  };
+});
+
+
+    globe.pointsData([]);           // Clear previous points
+    globe.pointsData(points);       // Set new points
     observationCount.textContent = `Observations: ${points.length}`;
   } catch (err) {
     console.error(err);
@@ -225,7 +253,6 @@ document.getElementById('zoomOutBtn').addEventListener('click', () => {
   }
 });
 
-     
   </script>
 </body>
 </html>
