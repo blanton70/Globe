@@ -183,68 +183,53 @@ function getColorMap(speciesList) {
   return map;
 }
 
-   document.getElementById('searchBtn').addEventListener('click', async () => {
-  const input = document.getElementById('speciesInput').value.trim();
+  document.getElementById('searchBtn').addEventListener('click', async () => {
+  const species = document.getElementById('speciesInput').value.trim();
   const startYear = parseInt(startYearSlider.value);
   const endYear = parseInt(endYearSlider.value);
-  if (!input) return alert("Please enter a species or genus name.");
 
-  // Determine if input is species (two words) or genus (one word)
-  const words = input.split(/\s+/);
-  let queryParam = '';
-  if (words.length >= 2) {
-    // Species
-    const encodedSpecies = encodeURIComponent(words.slice(0, 2).join(' '));
-    queryParam = `scientificName=${encodedSpecies}`;
-  } else {
-    // Genus
-    const encodedGenus = encodeURIComponent(words[0]);
-    queryParam = `genus=${encodedGenus}`;
-  }
+  if (!species) return alert("Please enter a species name.");
 
-  const url = `https://api.gbif.org/v1/occurrence/search?${queryParam}&limit=300&year=${startYear},${endYear}`;
+  // GBIF API expects year range like "YYYY-YYYY"
+  const url = `https://api.gbif.org/v1/occurrence/search?scientificName=${encodeURIComponent(species)}&limit=300&year=${startYear}-${endYear}`;
 
   try {
     const res = await fetch(url);
     const data = await res.json();
 
-    const filtered = data.results.filter(obs => obs.decimalLatitude && obs.decimalLongitude);
-const uniqueSpecies = [...new Set(filtered.map(obs => obs.species || obs.scientificName || species))];
-const colorMap = getColorMap(uniqueSpecies);
+    const points = data.results
+      .filter(obs => obs.decimalLatitude && obs.decimalLongitude)
+      .map(obs => {
+        const lat = obs.decimalLatitude;
+        const lng = obs.decimalLongitude;
+        const year = obs.year || "Unknown";
+        const country = obs.country || "Unknown";
+        const speciesName = obs.species || species;
+        const imageUrl = (obs.media && obs.media.length && obs.media[0].identifier) || null;
 
-const points = filtered.map(obs => {
-  const lat = obs.decimalLatitude;
-  const lng = obs.decimalLongitude;
-  const year = obs.year || "Unknown";
-  const country = obs.country || "Unknown";
-  const speciesName = obs.species || obs.scientificName || species;
-  const imageUrl = (obs.media && obs.media.length && obs.media[0].identifier) || null;
+        const label = `${speciesName}\n${country}, ${year}`;
+        const tooltip = `
+          <div style="text-align:left;">
+            <strong>${speciesName}</strong><br/>
+            <em>${country}</em><br/>
+            Year: ${year}<br/>
+            Lat: ${lat.toFixed(2)}, Lng: ${lng.toFixed(2)}<br/>
+            ${imageUrl ? `<img src="${imageUrl}" width="100" style="margin-top:5px;border-radius:4px;" />` : ""}
+          </div>
+        `;
 
-  const label = `${speciesName}\n${country}, ${year}`;
-  const tooltip = `
-    <div style="text-align:left;">
-      <strong>${speciesName}</strong><br/>
-      <em>${country}</em><br/>
-      Year: ${year}<br/>
-      Lat: ${lat.toFixed(2)}, Lng: ${lng.toFixed(2)}<br/>
-      ${imageUrl ? `<img src="${imageUrl}" width="100" style="margin-top:5px;border-radius:4px;" />` : ""}
-    </div>
-  `;
+        return {
+          lat,
+          lng,
+          year,
+          label,
+          tooltip,
+          color: 'orange',
+          size: 0.4
+        };
+      });
 
-  return {
-    lat,
-    lng,
-    year,
-    label,
-    tooltip,
-    color: colorMap[speciesName] || 'orange',
-    size: 0.4
-  };
-});
-
-
-    globe.pointsData([]);           // Clear previous points
-    globe.pointsData(points);       // Set new points
+    globe.pointsData(points);
     observationCount.textContent = `Observations: ${points.length}`;
   } catch (err) {
     console.error(err);
@@ -252,6 +237,7 @@ const points = filtered.map(obs => {
     alert("Failed to load GBIF data.");
   }
 });
+
 
   </script>
 </body>
