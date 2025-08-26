@@ -190,12 +190,24 @@ function getColorMap(speciesList) {
 
   if (!species) return alert("Please enter a species name.");
 
-  // GBIF API expects year range like "YYYY-YYYY"
-  const url = `https://api.gbif.org/v1/occurrence/search?scientificName=${encodeURIComponent(species)}&limit=300&year=${startYear}-${endYear}`;
+  // You can try either format for year
+  // const yearParam = `${startYear}-${endYear}`;
+  const yearParam = `${startYear},${endYear}`;
+
+  const url = `https://api.gbif.org/v1/occurrence/search?scientificName=${encodeURIComponent(species)}&limit=300&year=${yearParam}`;
 
   try {
     const res = await fetch(url);
+    if (!res.ok) throw new Error(`API error: ${res.status}`);
     const data = await res.json();
+    console.log('GBIF API results:', data);
+
+    if (!data.results || data.results.length === 0) {
+      alert('No data found for this species and year range.');
+      globe.pointsData([]);
+      observationCount.textContent = 'Observations: 0';
+      return;
+    }
 
     const points = data.results
       .filter(obs => obs.decimalLatitude && obs.decimalLongitude)
@@ -232,7 +244,7 @@ function getColorMap(speciesList) {
     globe.pointsData(points);
     observationCount.textContent = `Observations: ${points.length}`;
   } catch (err) {
-    console.error(err);
+    console.error('Failed to load GBIF data:', err);
     observationCount.textContent = 'Observations: 0';
     alert("Failed to load GBIF data.");
   }
